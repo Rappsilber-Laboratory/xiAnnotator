@@ -210,6 +210,7 @@ public class xiAnnotator {
     @Produces(MediaType.APPLICATION_JSON ) 
     public Response getAnnotation(String msg) throws ParseException {
         //setup the config
+        Logger.getLogger(this.getClass().getName()).log(Level.FINE, "REQUEST /FULL {0}", msg);
         StringBuilder sb = new StringBuilder();
         try {
             Gson gson = new Gson();
@@ -218,25 +219,37 @@ public class xiAnnotator {
             final ArrayList<LinkedTreeMap> mods = (ArrayList<LinkedTreeMap>) annotation.get("modifications");
             final LinkedTreeMap fragmentTolerance = (LinkedTreeMap) annotation.get("fragmentTolerance");
             final LinkedTreeMap precoursorTolerance = (LinkedTreeMap) annotation.get("precoursorTolerance");
+            final Object customConfig = annotation.get("custom");
             
             AbstractRunConfig config = new AbstractRunConfig() {
                     {
+//                        evaluateConfigLine("modification:known::SYMBOLEXT:ox;MODIFIED:X;DELTAMASS:15.99491463");
+//                        evaluateConfigLine("modification:known::SYMBOLEXT:cm;MODIFIED:C,K,H,D,E,S,T,Y;DELTAMASS:15.99491463");
                         // modifications
                         for (LinkedTreeMap modTM : mods) {
                             
                             if (modTM.get("aminoAcids") != null && modTM.get("aminoAcids") instanceof ArrayList) {
-                                for (String aa : (ArrayList<String>) modTM.get("aminoAcids")) {
-                                    AminoAcid a =this.getAminoAcid(aa);
-                                    AminoModification am = new AminoModification(a.SequenceID + modTM.get("id").toString() , 
-                                            a, 
-                                            a.mass+Double.parseDouble(modTM.get("mass").toString()));
-                                    addVariableModification(am);
+                                ArrayList<String> allAAs=(ArrayList<String>) modTM.get("aminoAcids");
+                                HashSet<String> mods = new HashSet<>();
+                                for (String aa : allAAs) {
+                                    if (aa.contentEquals("X") || aa.contentEquals("*")) {
+                                        for (AminoAcid a : getAllAminoAcids().toArray(new AminoAcid[0])) 
+                                        if (!mods.contains(a.SequenceID) && ! (a instanceof AminoModification)) {
+                                            mods.add(a.SequenceID);
+                                            addModification(a.SequenceID, modTM);
+                                        }
+                                    } else if (!mods.contains(aa)) {
+                                        mods.add(aa);
+                                        addModification(aa, modTM);
+                                    }
+                                    
                                 }
                             } else {
-                                    AminoAcid a =this.getAminoAcid(modTM.get("aminoacid").toString());
-                                    AminoModification am = new AminoModification(modTM.get("aminoacid").toString() + modTM.get("id").toString() , 
-                                            a, Double.parseDouble(modTM.get("mass").toString()));
-                                    addVariableModification(am);
+                                String saa = modTM.get("aminoacid").toString();
+                                AminoAcid a =this.getAminoAcid(saa);
+                                AminoModification am = new AminoModification(modTM.get("aminoacid").toString() + modTM.get("id").toString() , 
+                                        a, Double.parseDouble(modTM.get("mass").toString()));
+                                addVariableModification(am);
                                 
                             }
                         }
@@ -254,14 +267,28 @@ public class xiAnnotator {
                         double xlMas = Double.valueOf(xl.get("modMass").toString());
                         this.addCrossLinker(new SymetricSingleAminoAcidRestrictedCrossLinker("XL", xlMas, xlMas, new AminoAcid[]{AminoAcid.X}));
                         
-                        evaluateConfigLine("modification:known::SYMBOLEXT:ox;MODIFIED:X;DELTAMASS:15.99491463");
-                        evaluateConfigLine("modification:known::SYMBOLEXT:cm;MODIFIED:C,K,H,D,E,S,T,Y;DELTAMASS:15.99491463");
                         
                         evaluateConfigLine("loss:AminoAcidRestrictedLoss:NAME:CH3SOH;aminoacids:Mox;MASS:63.99828547");
                         evaluateConfigLine("loss:AminoAcidRestrictedLoss:NAME:H20;aminoacids:S,T,D,E;MASS:18.01056027;cterm");
                         evaluateConfigLine("loss:AminoAcidRestrictedLoss:NAME:NH3;aminoacids:R,K,N,Q;MASS:17.02654493;nterm");
                         
+                        if (customConfig instanceof ArrayList) {
+                            for (Object o : (ArrayList) customConfig) {
+                                evaluateConfigLine(o.toString());
+                            }
+                        } else if (customConfig instanceof String) {
+                            evaluateConfigLine(customConfig.toString());
+                        }
                     }
+
+                private AminoModification addModification(String aa, LinkedTreeMap modTM) throws NumberFormatException {
+                    AminoAcid a =this.getAminoAcid(aa);
+                    AminoModification am = new AminoModification(a.SequenceID + modTM.get("id").toString() ,
+                            a,
+                            a.mass+Double.parseDouble(modTM.get("mass").toString()));
+                    addVariableModification(am);
+                    return am;
+                }
             };
             // cretae the spectrum
             Spectra spectrum = new Spectra();
@@ -304,6 +331,7 @@ public class xiAnnotator {
 
             sb = getJSON(spectrum, config, peps, links, 0, null, null);
         } catch (Exception e) {
+            Logger.getLogger(this.getClass().getName()).log(Level.WARNING,"Exception from request",e);
             return getResponse(exception2String(e),MediaType.TEXT_PLAIN_TYPE);
         }
         return getResponse(sb.toString(), MediaType.APPLICATION_JSON_TYPE);
@@ -315,6 +343,7 @@ public class xiAnnotator {
     @Produces(MediaType.APPLICATION_JSON ) 
     public Response getKnownModifications() throws ParseException {
         //setup the config
+        Logger.getLogger(this.getClass().getName()).log(Level.FINE, "REQUEST /knownModifications");
         StringBuilder sb = new StringBuilder();
         try {
             Connection con = getConnection();
@@ -407,7 +436,7 @@ public class xiAnnotator {
     @Produces( MediaType.APPLICATION_JSON )
     public Response getAnnotation(@PathParam("searchID") Integer searchID, @PathParam("searchRID") String searchRID, @PathParam("matchID") long matchID, @QueryParam("peptide") List<String> Peptides, @QueryParam("link") List<Integer> links, @QueryParam("custom") List<String> custom, @DefaultValue("1") @QueryParam("firstresidue") int firstResidue, @DefaultValue("true") @QueryParam("prettyprint") boolean prettyprint) {
         StringBuilder sb = new StringBuilder("");
-        Logger.getLogger(this.getClass().getName()).log(Level.FINE,"request for match id: " + matchID);
+        Logger.getLogger(this.getClass().getName()).log(Level.FINE, "REQUEST /{0}/{1}/{2}", new Object[]{searchID, searchRID, matchID});
 
         try {
             //get the connection pool
