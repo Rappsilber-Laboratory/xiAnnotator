@@ -738,16 +738,16 @@ public class xiAnnotator {
         if (match.getCrosslinker() != null) {
             xlmas = match.getCrosslinker().getCrossLinkedMass();
         }
-        String sXLMass = xlmas.toString();
-        if (xlmas == Double.POSITIVE_INFINITY)
-            xlmas = Double.MAX_VALUE;
-        if (xlmas == Double.NEGATIVE_INFINITY)
-            xlmas = -Double.MAX_VALUE;
+//        String sXLMass = xlmas.toString();
+//        if (xlmas == Double.POSITIVE_INFINITY)
+//            xlmas = Double.MAX_VALUE;
+//        if (xlmas == Double.NEGATIVE_INFINITY)
+//            xlmas = -Double.MAX_VALUE;
         
-        sb.append("\n\t\"cross-linker\":{\"modMass\":"+(Double.isNaN(xlmas) ? "null" : xlmas)+"},");
+        sb.append("\n\t\"cross-linker\":{\"modMass\":"+double2JSON(xlmas)+"},");
         sb.append("\n\t\"precursorCharge\": "+match.getSpectrum().getPrecurserCharge() +",");
-        sb.append("\n\t\"precursorIntensity\": "+match.getSpectrum().getPrecurserIntensity()+",");
-        sb.append("\n\t\"precursorMZ\": "+match.getSpectrum().getPrecurserMZ()+",");
+        sb.append("\n\t\"precursorIntensity\": "+double2JSON(match.getSpectrum().getPrecurserIntensity())+",");
+        sb.append("\n\t\"precursorMZ\": "+ double2JSON(match.getSpectrum().getPrecurserMZ())+",");
         if (expCharge != null ) 
             sb.append("\n\t\"experimentalCharge\": "+expCharge+",");
         if (psmID != null ) 
@@ -766,7 +766,7 @@ public class xiAnnotator {
         if (mod.SequenceID.startsWith(b.SequenceID)) {
             modID=mod.SequenceID.substring(b.SequenceID.length());
         }
-        return "{\"aminoacid\":\"" + mod.BaseAminoAcid + "\", \"id\":\""+modID + "\", \"mass\":" + mod.mass + ", \"massDifference\":"+(mod.mass-b.mass)+"},";
+        return "{\"aminoacid\":\"" + mod.BaseAminoAcid + "\", \"id\":\""+modID + "\", \"mass\":" + double2JSON(mod.mass) + ", \"massDifference\":"+(mod.mass-b.mass)+"},";
     }
 
     public String labelToString(AminoLabel mod) {
@@ -807,7 +807,7 @@ public class xiAnnotator {
                     .append("\", \n\t\t\"peptideId\":").append(pid)
                     .append(",\n\t\t\"type\":\"").append(sbType)
                     .append("\", \n\t\t\"sequence\":\"").append(f.toString()).append("\", \n\t\t\"mass\":")
-                    .append(f.getMass()-Util.PROTON_MASS).append(",\n\t\t\"clusterInfo\":[").append(clusterInfos).append("\n\t\t], \n\t\t\"clusterIds\":[").append(MyArrayUtils.toString(cluster, ",")).
+                    .append(double2JSON(f.getMass()-Util.PROTON_MASS)).append(",\n\t\t\"clusterInfo\":[").append(clusterInfos).append("\n\t\t], \n\t\t\"clusterIds\":[").append(MyArrayUtils.toString(cluster, ",")).
                     append("],\n\t\t\"class\":").append(fragmentClass(f)).append(",\n\t\t\"range\":[");
             
             // add the ranges
@@ -1142,5 +1142,18 @@ public class xiAnnotator {
                         sbError.append(ste.toString() +"\n");
                     }
                     return sbError.toString();       
+    }
+    
+    
+    
+    String double2JSON(Double d) {
+        if (d == null) {
+            return "null";
+        }
+        if (d.isNaN() || d.isInfinite()) {
+            return "null";
+        }
+        return d.toString();
+        
     }
 }
