@@ -625,7 +625,7 @@ public class xiAnnotator {
             }
             
             Logger.getLogger(this.getClass().getName()).log(Level.FINE, "REQUEST /{0}/{1}/{2} - generate json", new Object[]{searchID, searchRID, matchID});
-            sb = getJSON(spectrum, config, peps, links, firstResidue, expCharge.intValue(), (long) matchID, new ArrayList<String>());
+            sb = getJSON(spectrum, config, peps, links, firstResidue, expCharge.intValue(), (long) matchID, config.getCustomConfigLine());
             Logger.getLogger(this.getClass().getName()).log(Level.FINE, "REQUEST /{0}/{1}/{2} - done with json", new Object[]{searchID, searchRID, matchID});
 
         } catch (Exception e) {

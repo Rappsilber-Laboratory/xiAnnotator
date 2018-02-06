@@ -2,7 +2,7 @@
 <metadata modelVersion="1.1.0">
   <groupId>org.rappsilberlab</groupId>
   <artifactId>XiSearch</artifactId>
-  <version>1.6.735</version>
+  <version>1.6.735.dev</version>
   <versioning>
     <snapshot>
       <localCopy>true</localCopy>
@@ -11,12 +11,12 @@
     <snapshotVersions>
       <snapshotVersion>
         <extension>jar</extension>
-        <value>1.6.735</value>
+        <value>1.6.735.dev</value>
         <updated>20180117142132</updated>
       </snapshotVersion>
       <snapshotVersion>
         <extension>pom</extension>
-        <value>1.6.735</value>
+        <value>1.6.735.dev</value>
         <updated>20180117142132</updated>
       </snapshotVersion>
     </snapshotVersions>

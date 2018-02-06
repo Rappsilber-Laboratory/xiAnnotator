@@ -72,9 +72,9 @@ public class xiAnnotatorTestMatchSearchMissmatch {
 //                .queryParam("peptide","HIQKEDVPSER")
 //                .request().get(String.class);
 //http://xi3.bio.ed.ac.uk/xiAnnotator/annotate/11996/11003-13921-38126-65897/4440116871/?peptide=LAEVAAKESIK&peptide=YRPTKFSDTVGQDSIK&link=7&link=5
-        String responseMsg = target.path("annotate/11996/11003-13921-38126-65897/4440116871/") 
-                .queryParam("peptide","LAEVAAKESIK","YRPTKFSDTVGQDSIK")
-                .queryParam("link","7","3")
+        String responseMsg = target.path("annotate/12509/10076-54246-35888-63134/6650171318/") 
+                .queryParam("peptide","TGQAPGFSYTDANK","KTGQAPGFSYsda-alkTDANK")
+                .queryParam("link","1","10")
                 .request().get(String.class);
         //10288/18135-52064-38377-95239/1205418326/?peptide=QEPERNECFLQHKDDNPNLPR&peptide=HKPKATKEQLKdtsspohAVMDDFAAFVEKCCK&link=13&link=7
 //                .queryParam("custom","fragment:BLikeDoubleFragmentation;ID:4")
