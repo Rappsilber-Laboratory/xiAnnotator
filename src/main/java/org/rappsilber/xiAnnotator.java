@@ -236,6 +236,7 @@ public class xiAnnotator {
     @Produces(MediaType.APPLICATION_JSON ) 
     public Response getFullAnnotation(String msg) throws ParseException {
         //setup the config
+        final ArrayList<String> custom = new  ArrayList<String>();
         Logger.getLogger(this.getClass().getName()).log(Level.FINE, "REQUEST /FULL {0}", msg);
         StringBuilder sb = new StringBuilder();
         try {
@@ -303,10 +304,20 @@ public class xiAnnotator {
                         
                         if (customConfig instanceof ArrayList) {
                             for (Object o : (ArrayList) customConfig) {
-                                evaluateConfigLine(o.toString());
+                                String opt = o.toString();
+                                custom.add(opt);
+                                // cross-linker get currently not evaluated from the custom setting in the 
+                                if (!opt.trim().startsWith("crosslinker:")) {
+                                    evaluateConfigLine(opt);
+                                }
                             }
                         } else if (customConfig instanceof String) {
-                            evaluateConfigLine(customConfig.toString());
+                            String opt = customConfig.toString();
+                            custom.add(opt);
+                            // cross-linker get currently not evaluated from the custom setting in the 
+                            if (!opt.trim().startsWith("crosslinker:")) {
+                                evaluateConfigLine(opt);
+                            }
                         }
                     }
 
@@ -359,7 +370,7 @@ public class xiAnnotator {
                 }
             }
 
-            sb = getJSON(spectrum, config, peps, links, 0, null, null);
+            sb = getJSON(spectrum, config, peps, links, 0, null, null,custom);
         } catch (Exception e) {
             Logger.getLogger(this.getClass().getName()).log(Level.WARNING,"Exception from request",e);
             return getResponse(exception2String(e),MediaType.TEXT_PLAIN_TYPE);
@@ -614,7 +625,7 @@ public class xiAnnotator {
             }
             
             Logger.getLogger(this.getClass().getName()).log(Level.FINE, "REQUEST /{0}/{1}/{2} - generate json", new Object[]{searchID, searchRID, matchID});
-            sb = getJSON(spectrum, config, peps, links, firstResidue, expCharge.intValue(), (long) matchID);
+            sb = getJSON(spectrum, config, peps, links, firstResidue, expCharge.intValue(), (long) matchID, new ArrayList<String>());
             Logger.getLogger(this.getClass().getName()).log(Level.FINE, "REQUEST /{0}/{1}/{2} - done with json", new Object[]{searchID, searchRID, matchID});
 
         } catch (Exception e) {
@@ -640,7 +651,7 @@ public class xiAnnotator {
         return getResponse(sb.toString().replaceAll("[\n\t]*", ""), MediaType.APPLICATION_JSON_TYPE);
     }
 
-    protected StringBuilder getJSON(Spectra spectrum, RunConfig config, Peptide[] peps, List<Integer> links, int firstResidue, Integer expCharge, Long psmID) {
+    protected StringBuilder getJSON(Spectra spectrum, RunConfig config, Peptide[] peps, List<Integer> links, int firstResidue, Integer expCharge, Long psmID, ArrayList<String> customConfig) {
         ArrayList<Cluster> cluster = new ArrayList<>();
         StringBuilder sb = new StringBuilder();
         sb.append("{");
@@ -679,7 +690,7 @@ public class xiAnnotator {
         Logger.getLogger(this.getClass().getName()).log(Level.FINE, "add fragments to json");
         addFragments(sb, fragmentCluster, match, peps,cluster,framentMatches,config);
         Logger.getLogger(this.getClass().getName()).log(Level.FINE, "add metadata to json");
-        appendMetaData(sb, config, peps,match, expCharge,psmID);
+        appendMetaData(sb, config, peps,match, expCharge,psmID,customConfig);
         
         sb.append("\n}");
 //            m_connection_pool.free(con);
@@ -696,10 +707,15 @@ public class xiAnnotator {
                 .build();
     }
 
-    protected void appendMetaData(StringBuilder sb, RunConfig config, Peptide[] peps, MatchedXlinkedPeptide match, Integer expCharge, Long psmID) {
+    protected void appendMetaData(StringBuilder sb, RunConfig config, Peptide[] peps, MatchedXlinkedPeptide match, Integer expCharge, Long psmID,ArrayList<String> custom) {
         sb.append(",\n\"annotation\":{\n\t\"xiVersion\":\"").append(XiVersion.getVersionString())
                 .append("\",\n\t\"annotatorVersion\":\"").append(version.toString())
                 .append("\",\n\t\"fragementTolerance\":\"").append(config.getFragmentTolerance().toString()).append("\"");
+        if (custom.size() >0) {
+            sb.append(",\n\t\"custom\":[\"");
+            sb.append(MyArrayUtils.toString(custom, "\",\""));
+            sb.append("\"]");
+        }
         boolean hasmod = false;
         HashSet<AminoAcid> mods =new HashSet<>();
         StringBuilder sbMods= new StringBuilder();
@@ -738,16 +754,16 @@ public class xiAnnotator {
         if (match.getCrosslinker() != null) {
             xlmas = match.getCrosslinker().getCrossLinkedMass();
         }
-        String sXLMass = xlmas.toString();
-        if (xlmas == Double.POSITIVE_INFINITY)
-            xlmas = Double.MAX_VALUE;
-        if (xlmas == Double.NEGATIVE_INFINITY)
-            xlmas = -Double.MAX_VALUE;
+//        String sXLMass = xlmas.toString();
+//        if (xlmas == Double.POSITIVE_INFINITY)
+//            xlmas = Double.MAX_VALUE;
+//        if (xlmas == Double.NEGATIVE_INFINITY)
+//            xlmas = -Double.MAX_VALUE;
         
-        sb.append("\n\t\"cross-linker\":{\"modMass\":"+(Double.isNaN(xlmas) ? "null" : xlmas)+"},");
+        sb.append("\n\t\"cross-linker\":{\"modMass\":"+double2JSON(xlmas)+"},");
         sb.append("\n\t\"precursorCharge\": "+match.getSpectrum().getPrecurserCharge() +",");
-        sb.append("\n\t\"precursorIntensity\": "+match.getSpectrum().getPrecurserIntensity()+",");
-        sb.append("\n\t\"precursorMZ\": "+match.getSpectrum().getPrecurserMZ()+",");
+        sb.append("\n\t\"precursorIntensity\": "+double2JSON(match.getSpectrum().getPrecurserIntensity())+",");
+        sb.append("\n\t\"precursorMZ\": "+ double2JSON(match.getSpectrum().getPrecurserMZ())+",");
         if (expCharge != null ) 
             sb.append("\n\t\"experimentalCharge\": "+expCharge+",");
         if (psmID != null ) 
@@ -766,7 +782,7 @@ public class xiAnnotator {
         if (mod.SequenceID.startsWith(b.SequenceID)) {
             modID=mod.SequenceID.substring(b.SequenceID.length());
         }
-        return "{\"aminoacid\":\"" + mod.BaseAminoAcid + "\", \"id\":\""+modID + "\", \"mass\":" + mod.mass + ", \"massDifference\":"+(mod.mass-b.mass)+"},";
+        return "{\"aminoacid\":\"" + mod.BaseAminoAcid + "\", \"id\":\""+modID + "\", \"mass\":" + double2JSON(mod.mass) + ", \"massDifference\":"+(mod.mass-b.mass)+"},";
     }
 
     public String labelToString(AminoLabel mod) {
@@ -807,7 +823,7 @@ public class xiAnnotator {
                     .append("\", \n\t\t\"peptideId\":").append(pid)
                     .append(",\n\t\t\"type\":\"").append(sbType)
                     .append("\", \n\t\t\"sequence\":\"").append(f.toString()).append("\", \n\t\t\"mass\":")
-                    .append(f.getMass()-Util.PROTON_MASS).append(",\n\t\t\"clusterInfo\":[").append(clusterInfos).append("\n\t\t], \n\t\t\"clusterIds\":[").append(MyArrayUtils.toString(cluster, ",")).
+                    .append(double2JSON(f.getMass()-Util.PROTON_MASS)).append(",\n\t\t\"clusterInfo\":[").append(clusterInfos).append("\n\t\t], \n\t\t\"clusterIds\":[").append(MyArrayUtils.toString(cluster, ",")).
                     append("],\n\t\t\"class\":").append(fragmentClass(f)).append(",\n\t\t\"range\":[");
             
             // add the ranges
@@ -1142,5 +1158,18 @@ public class xiAnnotator {
                         sbError.append(ste.toString() +"\n");
                     }
                     return sbError.toString();       
+    }
+    
+    
+    
+    String double2JSON(Double d) {
+        if (d == null) {
+            return "null";
+        }
+        if (d.isNaN() || d.isInfinite()) {
+            return "null";
+        }
+        return d.toString();
+        
     }
 }
