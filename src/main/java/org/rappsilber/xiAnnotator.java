@@ -236,6 +236,7 @@ public class xiAnnotator {
     @Produces(MediaType.APPLICATION_JSON ) 
     public Response getFullAnnotation(String msg) throws ParseException {
         //setup the config
+        final ArrayList<String> custom = new  ArrayList<String>();
         Logger.getLogger(this.getClass().getName()).log(Level.FINE, "REQUEST /FULL {0}", msg);
         StringBuilder sb = new StringBuilder();
         try {
@@ -303,10 +304,20 @@ public class xiAnnotator {
                         
                         if (customConfig instanceof ArrayList) {
                             for (Object o : (ArrayList) customConfig) {
-                                evaluateConfigLine(o.toString());
+                                String opt = o.toString();
+                                custom.add(opt);
+                                // cross-linker get currently not evaluated from the custom setting in the 
+                                if (!opt.trim().startsWith("crosslinker:")) {
+                                    evaluateConfigLine(opt);
+                                }
                             }
                         } else if (customConfig instanceof String) {
-                            evaluateConfigLine(customConfig.toString());
+                            String opt = customConfig.toString();
+                            custom.add(opt);
+                            // cross-linker get currently not evaluated from the custom setting in the 
+                            if (!opt.trim().startsWith("crosslinker:")) {
+                                evaluateConfigLine(opt);
+                            }
                         }
                     }
 
@@ -359,7 +370,7 @@ public class xiAnnotator {
                 }
             }
 
-            sb = getJSON(spectrum, config, peps, links, 0, null, null);
+            sb = getJSON(spectrum, config, peps, links, 0, null, null,custom);
         } catch (Exception e) {
             Logger.getLogger(this.getClass().getName()).log(Level.WARNING,"Exception from request",e);
             return getResponse(exception2String(e),MediaType.TEXT_PLAIN_TYPE);
@@ -614,7 +625,7 @@ public class xiAnnotator {
             }
             
             Logger.getLogger(this.getClass().getName()).log(Level.FINE, "REQUEST /{0}/{1}/{2} - generate json", new Object[]{searchID, searchRID, matchID});
-            sb = getJSON(spectrum, config, peps, links, firstResidue, expCharge.intValue(), (long) matchID);
+            sb = getJSON(spectrum, config, peps, links, firstResidue, expCharge.intValue(), (long) matchID, new ArrayList<String>());
             Logger.getLogger(this.getClass().getName()).log(Level.FINE, "REQUEST /{0}/{1}/{2} - done with json", new Object[]{searchID, searchRID, matchID});
 
         } catch (Exception e) {
@@ -640,7 +651,7 @@ public class xiAnnotator {
         return getResponse(sb.toString().replaceAll("[\n\t]*", ""), MediaType.APPLICATION_JSON_TYPE);
     }
 
-    protected StringBuilder getJSON(Spectra spectrum, RunConfig config, Peptide[] peps, List<Integer> links, int firstResidue, Integer expCharge, Long psmID) {
+    protected StringBuilder getJSON(Spectra spectrum, RunConfig config, Peptide[] peps, List<Integer> links, int firstResidue, Integer expCharge, Long psmID, ArrayList<String> customConfig) {
         ArrayList<Cluster> cluster = new ArrayList<>();
         StringBuilder sb = new StringBuilder();
         sb.append("{");
@@ -679,7 +690,7 @@ public class xiAnnotator {
         Logger.getLogger(this.getClass().getName()).log(Level.FINE, "add fragments to json");
         addFragments(sb, fragmentCluster, match, peps,cluster,framentMatches,config);
         Logger.getLogger(this.getClass().getName()).log(Level.FINE, "add metadata to json");
-        appendMetaData(sb, config, peps,match, expCharge,psmID);
+        appendMetaData(sb, config, peps,match, expCharge,psmID,customConfig);
         
         sb.append("\n}");
 //            m_connection_pool.free(con);
@@ -696,10 +707,15 @@ public class xiAnnotator {
                 .build();
     }
 
-    protected void appendMetaData(StringBuilder sb, RunConfig config, Peptide[] peps, MatchedXlinkedPeptide match, Integer expCharge, Long psmID) {
+    protected void appendMetaData(StringBuilder sb, RunConfig config, Peptide[] peps, MatchedXlinkedPeptide match, Integer expCharge, Long psmID,ArrayList<String> custom) {
         sb.append(",\n\"annotation\":{\n\t\"xiVersion\":\"").append(XiVersion.getVersionString())
                 .append("\",\n\t\"annotatorVersion\":\"").append(version.toString())
                 .append("\",\n\t\"fragementTolerance\":\"").append(config.getFragmentTolerance().toString()).append("\"");
+        if (custom.size() >0) {
+            sb.append(",\n\t\"custom\":[\"");
+            sb.append(MyArrayUtils.toString(custom, "\",\""));
+            sb.append("\"]");
+        }
         boolean hasmod = false;
         HashSet<AminoAcid> mods =new HashSet<>();
         StringBuilder sbMods= new StringBuilder();
