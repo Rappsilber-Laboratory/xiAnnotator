@@ -59,7 +59,7 @@
         <dependency>
             <groupId>org.rappsilberlab</groupId>
             <artifactId>XiSearch</artifactId>
-            <version>1.6.740.dev</version>
+            <version>1.6.740.dev1</version>
         </dependency>        
     </dependencies>
 

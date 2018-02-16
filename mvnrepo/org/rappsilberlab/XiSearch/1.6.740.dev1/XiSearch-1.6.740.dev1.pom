@@ -4,6 +4,5 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.rappsilberlab</groupId>
   <artifactId>XiSearch</artifactId>
-  <version>1.6.740.dev</version>
-  <description>POM was created from install:install-file</description>
+  <version>1.6.740.dev1</version>
 </project>
