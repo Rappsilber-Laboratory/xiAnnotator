@@ -712,9 +712,15 @@ public class xiAnnotator {
                 .append("\",\n\t\"annotatorVersion\":\"").append(version.toString())
                 .append("\",\n\t\"fragementTolerance\":\"").append(config.getFragmentTolerance().toString()).append("\"");
         if (custom.size() >0) {
+            StringBuilder csb = new StringBuilder();
+            int i=0;
+            for (String s : custom) {
+                csb.append(s.replace("\\", "\\\\").replace("\"","\\\"")).append("\",\"");
+            }
             sb.append(",\n\t\"custom\":[\"");
-            sb.append(MyArrayUtils.toString(custom, "\",\""));
-            sb.append("\"]");
+            
+            sb.append(csb.substring(0, csb.length()-2));
+            sb.append("]");
         }
         boolean hasmod = false;
         HashSet<AminoAcid> mods =new HashSet<>();
