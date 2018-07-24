@@ -6,7 +6,7 @@
     <groupId>org.rappsilberlab</groupId>
     <artifactId>xiAnnotator</artifactId>
     <packaging>jar</packaging>
-    <version>1.4.8</version>
+    <version>1.4.9</version>
     <name>xiAnnotator</name>
     <repositories>
       <repository>

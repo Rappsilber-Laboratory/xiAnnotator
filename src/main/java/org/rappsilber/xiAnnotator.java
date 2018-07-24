@@ -247,7 +247,12 @@ public class xiAnnotator {
             final LinkedTreeMap fragmentTolerance = (LinkedTreeMap) annotation.get("fragmentTolerance");
             final LinkedTreeMap precoursorTolerance = (LinkedTreeMap) annotation.get("precoursorTolerance");
             final Object customConfig = annotation.get("custom");
-            
+            final Object noloss= annotation.get("noloss");
+            final Object requestID = annotation.get("requestID");
+            String sRequestID = null;
+            if (requestID != null) {
+                sRequestID = requestID.toString();
+            }
             AbstractRunConfig config = new AbstractRunConfig() {
                     {
 //                        evaluateConfigLine("modification:known::SYMBOLEXT:ox;MODIFIED:X;DELTAMASS:15.99491463");
@@ -282,9 +287,7 @@ public class xiAnnotator {
                             }
                         }
                         //  tolerance
-                        if (precoursorTolerance == null) {
-                            this.setPrecoursorTolerance(new ToleranceUnit(1, "Da"));
-                        } else {
+                        if (precoursorTolerance != null) {
                             this.setPrecoursorTolerance(new ToleranceUnit(precoursorTolerance.get("tolerance").toString(), precoursorTolerance.get("unit").toString()));
                         }
                         
@@ -297,10 +300,11 @@ public class xiAnnotator {
                         double xlMas = Double.valueOf(xl.get("modMass").toString());
                         this.addCrossLinker(new SymetricSingleAminoAcidRestrictedCrossLinker("XL", xlMas, xlMas, new AminoAcid[]{}));
                         
-                        
-                        evaluateConfigLine("loss:AminoAcidRestrictedLoss:NAME:CH3SOH;aminoacids:Mox;MASS:63.99828547");
-                        evaluateConfigLine("loss:AminoAcidRestrictedLoss:NAME:H20;aminoacids:S,T,D,E;MASS:18.01056027;cterm");
-                        evaluateConfigLine("loss:AminoAcidRestrictedLoss:NAME:NH3;aminoacids:R,K,N,Q;MASS:17.02654493;nterm");
+                        if (noloss == null) {
+                            evaluateConfigLine("loss:AminoAcidRestrictedLoss:NAME:CH3SOH;aminoacids:Mox;MASS:63.99828547");
+                            evaluateConfigLine("loss:AminoAcidRestrictedLoss:NAME:H20;aminoacids:S,T,D,E;MASS:18.01056027;cterm");
+                            evaluateConfigLine("loss:AminoAcidRestrictedLoss:NAME:NH3;aminoacids:R,K,N,Q;MASS:17.02654493;nterm");
+                        }
                         
                         if (customConfig instanceof ArrayList) {
                             for (Object o : (ArrayList) customConfig) {
@@ -370,7 +374,7 @@ public class xiAnnotator {
                 }
             }
 
-            sb = getJSON(spectrum, config, peps, links, 0, null, null,custom);
+            sb = getJSON(spectrum, config, peps, links, 0, null, null,custom,sRequestID);
         } catch (Exception e) {
             Logger.getLogger(this.getClass().getName()).log(Level.WARNING,"Exception from request",e);
             return getResponse(exception2String(e),MediaType.TEXT_PLAIN_TYPE);
@@ -625,7 +629,7 @@ public class xiAnnotator {
             }
             
             Logger.getLogger(this.getClass().getName()).log(Level.FINE, "REQUEST /{0}/{1}/{2} - generate json", new Object[]{searchID, searchRID, matchID});
-            sb = getJSON(spectrum, config, peps, links, firstResidue, expCharge.intValue(), (long) matchID, config.getCustomConfigLine());
+            sb = getJSON(spectrum, config, peps, links, firstResidue, expCharge.intValue(), (long) matchID, config.getCustomConfigLine(), Long.toString(matchID));
             Logger.getLogger(this.getClass().getName()).log(Level.FINE, "REQUEST /{0}/{1}/{2} - done with json", new Object[]{searchID, searchRID, matchID});
 
         } catch (Exception e) {
@@ -651,7 +655,8 @@ public class xiAnnotator {
         return getResponse(sb.toString().replaceAll("[\n\t]*", ""), MediaType.APPLICATION_JSON_TYPE);
     }
 
-    protected StringBuilder getJSON(Spectra spectrum, RunConfig config, Peptide[] peps, List<Integer> links, int firstResidue, Integer expCharge, Long psmID, ArrayList<String> customConfig) {
+    protected StringBuilder getJSON(Spectra spectrum, RunConfig config, Peptide[] peps, List<Integer> links, int firstResidue, Integer expCharge, Long psmID, ArrayList<String> customConfig, String requestID) {
+        
         ArrayList<Cluster> cluster = new ArrayList<>();
         StringBuilder sb = new StringBuilder();
         sb.append("{");
@@ -690,7 +695,7 @@ public class xiAnnotator {
         Logger.getLogger(this.getClass().getName()).log(Level.FINE, "add fragments to json");
         addFragments(sb, fragmentCluster, match, peps,cluster,framentMatches,config);
         Logger.getLogger(this.getClass().getName()).log(Level.FINE, "add metadata to json");
-        appendMetaData(sb, config, peps,match, expCharge,psmID,customConfig);
+        appendMetaData(sb, config, peps,match, expCharge,psmID,customConfig,requestID);
         
         sb.append("\n}");
 //            m_connection_pool.free(con);
@@ -707,7 +712,7 @@ public class xiAnnotator {
                 .build();
     }
 
-    protected void appendMetaData(StringBuilder sb, RunConfig config, Peptide[] peps, MatchedXlinkedPeptide match, Integer expCharge, Long psmID,ArrayList<String> custom) {
+    protected void appendMetaData(StringBuilder sb, RunConfig config, Peptide[] peps, MatchedXlinkedPeptide match, Integer expCharge, Long psmID,ArrayList<String> custom, String requestID) {
         sb.append(",\n\"annotation\":{\n\t\"xiVersion\":\"").append(XiVersion.getVersionString())
                 .append("\",\n\t\"annotatorVersion\":\"").append(version.toString())
                 .append("\",\n\t\"fragementTolerance\":\"").append(config.getFragmentTolerance().toString()).append("\"");
@@ -767,6 +772,8 @@ public class xiAnnotator {
 //            xlmas = -Double.MAX_VALUE;
         
         sb.append("\n\t\"cross-linker\":{\"modMass\":"+double2JSON(xlmas)+"},");
+        if (requestID != null && !requestID.isEmpty())
+            sb.append("\n\t\"requestID\":\""+requestID.replace("\"", "\\\"")+"\",");
         sb.append("\n\t\"precursorCharge\": "+match.getSpectrum().getPrecurserCharge() +",");
         sb.append("\n\t\"precursorIntensity\": "+double2JSON(match.getSpectrum().getPrecurserIntensity())+",");
         sb.append("\n\t\"precursorMZ\": "+ double2JSON(match.getSpectrum().getPrecurserMZ())+",");
@@ -777,7 +784,14 @@ public class xiAnnotator {
         if (match.getSpectrum().getPrecurserMZ() == -1) {
             sb.append("\n\t\"precursorError\": \"\"");
         } else {
-            sb.append("\n\t\"precursorError\": \"" + config.getPrecousorTolerance().toString(match.getSpectrum().getPrecurserMass(), match.getCalcMass())+"\"");
+            ToleranceUnit tu = config.getPrecousorTolerance();
+            if (tu == null) {
+                if (Math.abs((match.getSpectrum().getPrecurserMass()- match.getCalcMass())/match.getCalcMass()*1000000)>100)
+                    tu = new ToleranceUnit(1, "Da");
+                else
+                    tu = new ToleranceUnit(1, "ppm");
+            }
+            sb.append("\n\t\"precursorError\": \"" + tu.toString(match.getSpectrum().getPrecurserMass(), match.getCalcMass())+"\"");
         }
         sb.append("\n}");
     }
@@ -1178,4 +1192,6 @@ public class xiAnnotator {
         return d.toString();
         
     }
+    
+    
 }
