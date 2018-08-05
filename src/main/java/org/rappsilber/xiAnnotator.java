@@ -394,6 +394,7 @@ public class xiAnnotator {
             Connection con = getConnection();
             
             final ResultSet rs = con.createStatement().executeQuery("select 'modification:variable:'|| description from modification");
+            final ResultSet rsXL = con.createStatement().executeQuery("select description from crosslinker");
             
             AbstractRunConfig config = new AbstractRunConfig() {
                     {
@@ -401,10 +402,15 @@ public class xiAnnotator {
                         while (rs.next()) {
                             evaluateConfigLine(rs.getString(1));
                         }
+                        while (rsXL.next()) {
+                            evaluateConfigLine(rsXL.getString(1));
+                        }
 
                         
                     }
             };
+            rs.close();
+            rsXL.close();
             HashMap<String,HashMap<Double,ArrayList<AminoModification>>> allMods = new HashMap<>();
             
             
