@@ -132,5 +132,5 @@
     <description>1.4.11 knownmodifications now also include cross-linker based modifications
 1.4.10 updated to XiSearch_1.6.743.dev
 
-1.4.8 Bugfix for quting "\" in json output</description>
+1.4.8 Bugfix for quoting "\" in json output</description>
 </project>
