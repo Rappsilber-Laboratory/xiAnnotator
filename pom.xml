@@ -6,7 +6,7 @@
     <groupId>org.rappsilberlab</groupId>
     <artifactId>xiAnnotator</artifactId>
     <packaging>jar</packaging>
-    <version>1.4.11</version>
+    <version>1.4.12</version>
     <name>xiAnnotator</name>
     <repositories>
       <repository>
@@ -59,7 +59,7 @@
         <dependency>
             <groupId>org.rappsilberlab</groupId>
             <artifactId>XiSearch</artifactId>
-            <version>1.6.743.dev</version>
+            <version>1.6.743.dev2</version>
             <type>jar</type>
         </dependency>        
     </dependencies>

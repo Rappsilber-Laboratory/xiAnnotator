@@ -35,6 +35,9 @@ import rappsilber.db.ConnectionPool;
 import rappsilber.ms.ToleranceUnit;
 import rappsilber.ms.crosslinker.CrossLinker;
 import rappsilber.ms.crosslinker.SymetricSingleAminoAcidRestrictedCrossLinker;
+import rappsilber.ms.dataAccess.AbstractStackedSpectraAccess;
+import rappsilber.ms.dataAccess.SingleSpectrumAccess;
+import rappsilber.ms.dataAccess.SpectraAccess;
 import rappsilber.ms.sequence.AminoAcid;
 import rappsilber.ms.sequence.AminoLabel;
 import rappsilber.ms.sequence.AminoModification;
@@ -55,6 +58,7 @@ import rappsilber.ms.spectra.match.MatchedXlinkedPeptideWeighted;
 import rappsilber.utils.HashMapArrayList;
 import rappsilber.utils.IntArrayList;
 import rappsilber.utils.MyArrayUtils;
+import rappsilber.utils.ObjectWrapper;
 import rappsilber.utils.Util;
 import rappsilber.utils.Version;
 import rappsilber.utils.XiVersion;
@@ -253,6 +257,8 @@ public class xiAnnotator {
             if (requestID != null) {
                 sRequestID = requestID.toString();
             }
+            final ObjectWrapper<Boolean> applyFilter = new ObjectWrapper<>();
+            applyFilter.value=false;
             AbstractRunConfig config = new AbstractRunConfig() {
                     {
 //                        evaluateConfigLine("modification:known::SYMBOLEXT:ox;MODIFIED:X;DELTAMASS:15.99491463");
@@ -305,14 +311,24 @@ public class xiAnnotator {
                             evaluateConfigLine("loss:AminoAcidRestrictedLoss:NAME:H20;aminoacids:S,T,D,E;MASS:18.01056027;cterm");
                             evaluateConfigLine("loss:AminoAcidRestrictedLoss:NAME:NH3;aminoacids:R,K,N,Q;MASS:17.02654493;nterm");
                         }
-                        
-                        if (customConfig instanceof ArrayList) {
+                         
+                       if (customConfig instanceof ArrayList) {
                             for (Object o : (ArrayList) customConfig) {
                                 String opt = o.toString();
                                 custom.add(opt);
                                 // cross-linker get currently not evaluated from the custom setting in the 
-                                if (!opt.trim().startsWith("crosslinker:")) {
-                                    evaluateConfigLine(opt);
+                                if (opt.trim().toLowerCase().startsWith("annotator:")) {
+                                    String aopt= opt.substring("annotator:".length());
+                                    if (aopt.startsWith("applyfilter:")) {
+                                        applyFilter.value=AbstractRunConfig.getBoolean(aopt.split(":", 2)[1], false);
+                                    }
+                                } else if (!opt.trim().toLowerCase().startsWith("crosslinker:")) {
+                                    if (!evaluateConfigLine(opt)) {
+                                        if (opt.contains(":")) {
+                                            String[] p = opt.split(":",2);
+                                            storeObject(p[0], p[1]);
+                                        }
+                                    }
                                 }
                             }
                         } else if (customConfig instanceof String) {
@@ -348,6 +364,17 @@ public class xiAnnotator {
             Double precIntensity =  (Double)annotation.get("precursorIntensity");
             if (precIntensity != null) {
                 spectrum.setPrecurserIntensity(precIntensity);
+            }
+            
+            // apply any configured filter if asked to
+            if (applyFilter.value && config.getInputFilter().size()>0) {
+                SpectraAccess ssa = new SingleSpectrumAccess(spectrum);
+
+                for (AbstractStackedSpectraAccess sa : config.getInputFilter()) {
+                    sa.setReader(ssa);
+                    ssa = sa;
+                }
+                spectrum = ssa.next();
             }
             
             ArrayList<LinkedTreeMap> jsonpeps = (ArrayList<LinkedTreeMap>) result.get("Peptides");
