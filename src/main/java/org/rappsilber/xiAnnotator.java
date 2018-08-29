@@ -365,7 +365,7 @@ public class xiAnnotator {
             if (precIntensity != null) {
                 spectrum.setPrecurserIntensity(precIntensity);
             }
-            
+            spectrum.setTolearance(config.getFragmentTolerance());
             // apply any configured filter if asked to
             if (applyFilter.value && config.getInputFilter().size()>0) {
                 SpectraAccess ssa = new SingleSpectrumAccess(spectrum);
@@ -406,7 +406,9 @@ public class xiAnnotator {
             Logger.getLogger(this.getClass().getName()).log(Level.WARNING,"Exception from request",e);
             return getResponse(exception2String(e),MediaType.TEXT_PLAIN_TYPE);
         }
-        return getResponse(sb.toString(), MediaType.APPLICATION_JSON_TYPE);
+        Response r = getResponse(sb.toString(), MediaType.APPLICATION_JSON_TYPE);
+//        r.getHeaders().add("Access-Control-Allow-Header", "Content-Type, Accept, X-Requested-With, remember-me");
+        return r;
         //return getResponse(sb.toString().replaceAll("[\\t\\s]*[\\n\\r][\\t\\s]*", ""), MediaType.APPLICATION_JSON_TYPE);
     }
 
@@ -499,7 +501,8 @@ public class xiAnnotator {
         } catch (Exception e) {
             return getResponse(exception2String(e),MediaType.TEXT_PLAIN_TYPE);
         }
-        return getResponse(sb.toString(), MediaType.APPLICATION_JSON_TYPE);
+        Response r = getResponse(sb.toString(), MediaType.APPLICATION_JSON_TYPE);
+        return r; 
         //return getResponse(sb.toString().replaceAll("[\\t\\s]*[\\n\\r][\\t\\s]*", ""), MediaType.APPLICATION_JSON_TYPE);
     }
     
@@ -740,8 +743,9 @@ public class xiAnnotator {
         return Response.ok(message, mt)
                 .header("Access-Control-Allow-Origin", "*")
                 .header("Access-Control-Allow-Credentials", "true")
-                .header("Access-Control-Allow-Methods", "GET")
+                .header("Access-Control-Allow-Methods", "GET, POST")
                 .header("Access-Control-Allow-Headers", "Content-Type, Accept")
+                .allow("OPTIONS")
                 .build();
     }
 
