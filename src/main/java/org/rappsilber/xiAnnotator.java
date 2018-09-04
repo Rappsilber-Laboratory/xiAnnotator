@@ -233,6 +233,15 @@ public class xiAnnotator {
 "</body>\n" +
 "</html>", MediaType.TEXT_HTML_TYPE);
     }
+
+    @POST
+    @Path("/MIRROR")
+    @Consumes(MediaType.APPLICATION_JSON ) 
+    @Produces(MediaType.APPLICATION_JSON ) 
+    public String getMirror(String msg) throws ParseException {
+        System.out.println(msg);
+        return msg;
+    }
     
     @POST
     @Path("/FULL")
@@ -302,7 +311,7 @@ public class xiAnnotator {
                             this.evaluateConfigLine("fragment:"+ion.get("type").toString());
                         }
                         
-                        LinkedTreeMap xl = (LinkedTreeMap) annotation.get("cross-linker");
+                        LinkedTreeMap xl = (LinkedTreeMap) annotation.get("crosslinker");
                         double xlMas = Double.valueOf(xl.get("modMass").toString());
                         this.addCrossLinker(new SymetricSingleAminoAcidRestrictedCrossLinker("XL", xlMas, xlMas, new AminoAcid[]{}));
                         
@@ -752,7 +761,11 @@ public class xiAnnotator {
     protected void appendMetaData(StringBuilder sb, RunConfig config, Peptide[] peps, MatchedXlinkedPeptide match, Integer expCharge, Long psmID,ArrayList<String> custom, String requestID) {
         sb.append(",\n\"annotation\":{\n\t\"xiVersion\":\"").append(XiVersion.getVersionString())
                 .append("\",\n\t\"annotatorVersion\":\"").append(version.toString())
-                .append("\",\n\t\"fragementTolerance\":\"").append(config.getFragmentTolerance().toString()).append("\"");
+                .append("\",\n\t\"fragmentTolerance\": {\"tolerance\":")
+                .append(config.getFragmentTolerance().getValue())
+                .append(",\"unit\":\"")
+                .append(config.getFragmentTolerance().getUnit())
+                .append("\"}");
         if (custom.size() >0) {
             StringBuilder csb = new StringBuilder();
             int i=0;
@@ -808,12 +821,13 @@ public class xiAnnotator {
 //        if (xlmas == Double.NEGATIVE_INFINITY)
 //            xlmas = -Double.MAX_VALUE;
         
-        sb.append("\n\t\"cross-linker\":{\"modMass\":"+double2JSON(xlmas)+"},");
+        sb.append("\n\t\"crosslinker\":{\"modMass\":"+double2JSON(xlmas)+"},");
         if (requestID != null && !requestID.isEmpty())
             sb.append("\n\t\"requestID\":\""+requestID.replace("\"", "\\\"")+"\",");
         sb.append("\n\t\"precursorCharge\": "+match.getSpectrum().getPrecurserCharge() +",");
         sb.append("\n\t\"precursorIntensity\": "+double2JSON(match.getSpectrum().getPrecurserIntensity())+",");
         sb.append("\n\t\"precursorMZ\": "+ double2JSON(match.getSpectrum().getPrecurserMZ())+",");
+        sb.append("\n\t\"calculatedMZ\": "+ double2JSON((match.getCalcMass()/match.getExpCharge())+Util.PROTON_MASS)+",");
         if (expCharge != null ) 
             sb.append("\n\t\"experimentalCharge\": "+expCharge+",");
         if (psmID != null ) 
@@ -822,13 +836,30 @@ public class xiAnnotator {
             sb.append("\n\t\"precursorError\": \"\"");
         } else {
             ToleranceUnit tu = config.getPrecousorTolerance();
+            String error = null;
+            String unit = null;
             if (tu == null) {
-                if (Math.abs((match.getSpectrum().getPrecurserMass()- match.getCalcMass())/match.getCalcMass()*1000000)>100)
-                    tu = new ToleranceUnit(1, "Da");
-                else
-                    tu = new ToleranceUnit(1, "ppm");
+                if (Math.abs((match.getSpectrum().getPrecurserMass()- match.getCalcMass())/match.getCalcMass()*1000000)>100) {
+                    error = Double.toString(Math.abs((match.getSpectrum().getPrecurserMass()- match.getCalcMass())));
+                    unit = "Da";
+                } else {
+                    error = Double.toString(Math.abs((match.getSpectrum().getPrecurserMass()- match.getCalcMass())/match.getCalcMass()*1000000));
+                    unit = "ppm";
+                }
+            } else {
+                if (!tu.isRelative()) {
+                    error = Double.toString(Math.abs((match.getSpectrum().getPrecurserMass()- match.getCalcMass())));
+                    unit = "Da";
+                } else {
+                    error = Double.toString(Math.abs((match.getSpectrum().getPrecurserMass()- match.getCalcMass())/match.getCalcMass()*1000000));
+                    unit = "ppm";
+                }
             }
-            sb.append("\n\t\"precursorError\": \"" + tu.toString(match.getSpectrum().getPrecurserMass(), match.getCalcMass())+"\"");
+            sb.append("\n\t\"precursorError\": {\"tolerance\":")
+                .append(error)
+                .append(",\"unit\":\"")
+                .append(unit)
+                .append("\"}");
         }
         sb.append("\n}");
     }

@@ -6,7 +6,7 @@
     <groupId>org.rappsilberlab</groupId>
     <artifactId>xiAnnotator</artifactId>
     <packaging>jar</packaging>
-    <version>1.4.13</version>
+    <version>1.4.14</version>
     <name>xiAnnotator</name>
     <repositories>
       <repository>
@@ -59,7 +59,7 @@
         <dependency>
             <groupId>org.rappsilberlab</groupId>
             <artifactId>XiSearch</artifactId>
-            <version>1.6.743.dev2</version>
+            <version>1.6.744.RC2</version>
             <type>jar</type>
         </dependency>        
     </dependencies>
@@ -129,7 +129,8 @@
         <jersey.version>2.22.1</jersey.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
-    <description>1.4.13 Bugfix: filter where applied before the tolerance was defined for the spectrum
+    <description>1.4.14 Spelling errors and format of tolerance returns changed
+1.4.13 Bugfix: filter where applied before the tolerance was defined for the spectrum
 1.4.11 knownmodifications now also include cross-linker based modifications
 1.4.10 updated to XiSearch_1.6.743.dev
 
