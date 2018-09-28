@@ -18,6 +18,8 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
@@ -262,6 +264,8 @@ public class xiAnnotator {
             final Object customConfig = annotation.get("custom");
             final Object noloss= annotation.get("noloss");
             final Object requestID = annotation.get("requestID");
+            final ArrayList<LinkedTreeMap> losses = (ArrayList<LinkedTreeMap>) annotation.get("losses");
+            
             String sRequestID = null;
             if (requestID != null) {
                 sRequestID = requestID.toString();
@@ -270,6 +274,8 @@ public class xiAnnotator {
             applyFilter.value=false;
             AbstractRunConfig config = new AbstractRunConfig() {
                     {
+                       Object nl = noloss;
+                       this.getAminoAcid("X").mass = 0;
 //                        evaluateConfigLine("modification:known::SYMBOLEXT:ox;MODIFIED:X;DELTAMASS:15.99491463");
 //                        evaluateConfigLine("modification:known::SYMBOLEXT:cm;MODIFIED:C,K,H,D,E,S,T,Y;DELTAMASS:15.99491463");
                         // modifications
@@ -282,10 +288,10 @@ public class xiAnnotator {
                                     for (String aa : allAAs) {
                                         if (aa.contentEquals("X") || aa.contentEquals("*")) {
                                             for (AminoAcid a : getAllAminoAcids().toArray(new AminoAcid[0])) 
-                                            if (!mods.contains(a.SequenceID) && ! (a instanceof AminoModification)) {
-                                                mods.add(a.SequenceID);
-                                                addModification(a.SequenceID, modTM);
-                                            }
+                                                if (!mods.contains(a.SequenceID) && !(a instanceof AminoModification)) {
+                                                    mods.add(a.SequenceID);
+                                                    addModification(a.SequenceID, modTM);
+                                                }
                                         } else if (!mods.contains(aa)) {
                                             mods.add(aa);
                                             addModification(aa, modTM);
@@ -301,6 +307,8 @@ public class xiAnnotator {
                                 }
                             }
                         }
+
+
                         //  tolerance
                         if (precoursorTolerance != null) {
                             this.setPrecoursorTolerance(new ToleranceUnit(precoursorTolerance.get("tolerance").toString(), precoursorTolerance.get("unit").toString()));
@@ -312,13 +320,39 @@ public class xiAnnotator {
                         }
                         
                         LinkedTreeMap xl = (LinkedTreeMap) annotation.get("crosslinker");
+                        if (xl==null)
+                            xl = (LinkedTreeMap) annotation.get("cross-linker");
                         double xlMas = Double.valueOf(xl.get("modMass").toString());
                         this.addCrossLinker(new SymetricSingleAminoAcidRestrictedCrossLinker("XL", xlMas, xlMas, new AminoAcid[]{}));
                         
-                        if (noloss == null) {
-                            evaluateConfigLine("loss:AminoAcidRestrictedLoss:NAME:CH3SOH;aminoacids:Mox;MASS:63.99828547");
-                            evaluateConfigLine("loss:AminoAcidRestrictedLoss:NAME:H20;aminoacids:S,T,D,E;MASS:18.01056027;cterm");
-                            evaluateConfigLine("loss:AminoAcidRestrictedLoss:NAME:NH3;aminoacids:R,K,N,Q;MASS:17.02654493;nterm");
+                        if (losses != null) {
+                            for (LinkedTreeMap loss : losses) {
+                                boolean nterm = false;
+                                boolean cterm = false;
+                                Double mass = Double.parseDouble(loss.get("mass").toString());
+                                HashSet<String> specificity = new HashSet<>();
+                                String id = loss.get("id").toString();
+                                ArrayList<String> allAAs=(ArrayList<String>) loss.get("specificity");
+                                for (String aa : allAAs) {
+                                    if (aa.toLowerCase().startsWith("cterm")) {
+                                        cterm = true;
+                                    } else if (aa.toLowerCase().startsWith("nterm")) {
+                                        nterm = true;
+                                    } else if (aa.contentEquals("X") || aa.contentEquals("*")) {
+                                        for (AminoAcid a : getAllAminoAcids().toArray(new AminoAcid[0])) 
+                                            specificity.add(a.SequenceID);
+                                    } else {
+                                        specificity.add(aa);
+                                    }
+                                }
+                                evaluateConfigLine("loss:AminoAcidRestrictedLoss:NAME:"+id+ 
+                                        ";aminoacids:"+ MyArrayUtils.toString(specificity, ",") + 
+                                        ";MASS:"+ mass +
+                                        (cterm?";cterm":"") +
+                                        (nterm?";nterm":"")
+                                );
+                                nl = true;
+                            }
                         }
                          
                        if (customConfig instanceof ArrayList) {
@@ -346,15 +380,32 @@ public class xiAnnotator {
                             // cross-linker get currently not evaluated from the custom setting in the 
                             if (!opt.trim().startsWith("crosslinker:")) {
                                 evaluateConfigLine(opt);
+                                if (opt.contains("loss:AminoAcidRestrictedLoss"))
+                                    nl = Boolean.TRUE;
                             }
+                            
                         }
+                       
+                       
+                        if (nl == null) {
+                            evaluateConfigLine("loss:AminoAcidRestrictedLoss:NAME:CH3SOH;aminoacids:Mox;MASS:63.99828547");
+                            evaluateConfigLine("loss:AminoAcidRestrictedLoss:NAME:H20;aminoacids:S,T,D,E;MASS:18.01056027;cterm");
+                            evaluateConfigLine("loss:AminoAcidRestrictedLoss:NAME:NH3;aminoacids:R,K,N,Q;MASS:17.02654493;nterm");
+                        }
+                       
                     }
 
                 private AminoModification addModification(String aa, LinkedTreeMap modTM) throws NumberFormatException {
                     AminoAcid a =this.getAminoAcid(aa);
-                    AminoModification am = new AminoModification(a.SequenceID + modTM.get("id").toString() ,
+                    Double mass = Double.parseDouble(modTM.get("mass").toString());
+                    String idExt  =modTM.get("id").toString();
+                    if (mass == 0 && idExt.matches("^-?[0-9]+(\\.[0-9]+)?$")) {
+                        mass=Double.parseDouble(idExt);
+                    }
+                        
+                    AminoModification am = new AminoModification(a.SequenceID + idExt ,
                             a,
-                            a.mass+Double.parseDouble(modTM.get("mass").toString()));
+                            a.mass+mass);
                     addVariableModification(am);
                     return am;
                 }
@@ -674,7 +725,7 @@ public class xiAnnotator {
             }
             
             Logger.getLogger(this.getClass().getName()).log(Level.FINE, "REQUEST /{0}/{1}/{2} - generate json", new Object[]{searchID, searchRID, matchID});
-            sb = getJSON(spectrum, config, peps, links, firstResidue, expCharge.intValue(), (long) matchID, config.getCustomConfigLine(), Long.toString(matchID));
+            sb = getJSON(spectrum, config, peps, links, firstResidue, expCharge.intValue(), (long) matchID, config.getCustomConfigLines(), Long.toString(matchID));
             Logger.getLogger(this.getClass().getName()).log(Level.FINE, "REQUEST /{0}/{1}/{2} - done with json", new Object[]{searchID, searchRID, matchID});
 
         } catch (Exception e) {
@@ -777,6 +828,31 @@ public class xiAnnotator {
             sb.append(csb.substring(0, csb.length()-2));
             sb.append("]");
         }
+        
+        // add losses to the response
+        // curretnly limited to AminoAcidRestrictedLoss
+        ArrayList<String> losses = new ArrayList<>();
+        Pattern lossMatch=Pattern.compile("^(?=.*mass:([0-9\\.]+))(?=.*aminoacids:([^;]+))(?=.*NAME:([^;]+))(?=.*(cterm))?(?=.*(nterm))?loss:AminoAcidRestrictedLoss:.*",Pattern.CASE_INSENSITIVE);
+        for (String l : ((AbstractRunConfig) config).getConfigLines()) {
+            Matcher m = lossMatch.matcher(l);
+            if (m.matches()) {
+                String mass=m.group(1).substring(m.group(1).indexOf(":")+1).trim();
+                String specificity=m.group(2).substring(m.group(2).indexOf(":")+1).trim();
+                String id = m.group(3).substring(m.group(3).indexOf(":")+1).trim();
+                String cTerm = m.group(4);
+                String nTerm = m.group(5);
+                if (specificity.length()>0)
+                    specificity = "\""+specificity.replace(",", "\",\"") + "\"";
+                if (cTerm != null) {
+                    specificity += (specificity.isEmpty()?"":",") + "\"CTerm\"";
+                }
+                if (nTerm != null) {
+                    specificity += (specificity.isEmpty()?"":",") + "\"NTerm\"";
+                }
+                specificity = "[" + specificity + "]";
+                losses.add("{\"id\" : \"" + id + "\", \"specificity\":" + specificity + ", \"mass\":" + mass +"}");
+            }
+        }
         boolean hasmod = false;
         HashSet<AminoAcid> mods =new HashSet<>();
         StringBuilder sbMods= new StringBuilder();
@@ -801,6 +877,10 @@ public class xiAnnotator {
             sbMods.deleteCharAt(sbMods.length()-1);
             sb.append(",\n\t\"modifications\":[").append(sbMods).append("\n\t]");
         }
+        if (!losses.isEmpty()) {
+            sb.append(",\n\t\"losses\":[").append(MyArrayUtils.toString(losses, ",\n\t\t")).append("\n\t]");
+        }
+        
         StringBuilder sbIon= new StringBuilder();
         for (Method m: config.getFragmentMethods()) {
             if (!(m.getDeclaringClass().isAssignableFrom(Loss.class))) {
