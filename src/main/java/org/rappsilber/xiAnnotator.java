@@ -372,7 +372,7 @@ public class xiAnnotator {
                                             storeObject(p[0], p[1]);
                                         }
                                     } else if (opt.startsWith("loss:AminoAcidRestrictedLoss:")) {
-                                        this.getCustomConfigLines().remove(opt);
+                                        custom.remove(opt);
                                     }
                                 }
                             }
