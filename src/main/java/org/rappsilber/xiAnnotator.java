@@ -448,7 +448,23 @@ public class xiAnnotator {
                 AminoAcid[] pepArray  = new  AminoAcid[seq.size()];
                 for (int aa = 0; aa<pepArray.length;aa ++) {
                     LinkedTreeMap jsonAA = seq.get(aa);
-                    String id=jsonAA.get("aminoAcid").toString()+jsonAA.get("Modification").toString();
+                    
+                    String aaID=jsonAA.get("aminoAcid").toString();
+                    String modID = jsonAA.get("Modification").toString();
+                    String  id = aaID+modID;
+                    if (aaID.contentEquals("X") &&
+                            modID.matches("[+\\-]?[0-9\\.,]*")) {
+                        String sModMass =  modID;
+                        if (sModMass.matches(".*\\,.*\\..*")) {
+                            sModMass = sModMass.replaceAll(",", "");
+                        }
+                        if (sModMass.matches(".*\\..*\\,.*")) {
+                            sModMass = sModMass.replaceAll(".", "");
+                            sModMass = sModMass.replaceAll(",", ".");
+                        }
+                        Double mass= Double.parseDouble(sModMass);
+                        config.addKnownModification(new AminoModification(id, AminoAcid.X, mass));
+                    }
                     pepArray[aa]=config.getAminoAcid(id);
                 }
                 peps[p] = new Peptide(new Sequence(pepArray), 0, pepArray.length);
