@@ -6,7 +6,7 @@
     <groupId>org.rappsilberlab</groupId>
     <artifactId>xiAnnotator</artifactId>
     <packaging>jar</packaging>
-    <version>1.4.22</version>
+    <version>1.4.23</version>
     <name>xiAnnotator</name>
     <repositories>
       <repository>
@@ -59,7 +59,7 @@
         <dependency>
             <groupId>rappsilber</groupId>
             <artifactId>XiSearch</artifactId>
-            <version>1.6.752</version>
+            <version>1.6.753</version>
         </dependency>
     </dependencies>
 
@@ -135,7 +135,8 @@
         <jersey.version>2.22.1</jersey.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
-    <description>1.4.21 updated to xisearch 1.6.752 
+    <description>1.4.23 updated to xisearch 1.6.753
+1.4.21 updated to xisearch 1.6.752 
 1.4.20 updated to xisearch 1.6.750 
 1.4.19 BugFix for Xi OpenModification search results
 1.4.18 Depends on 1.6.744.RC4 losses get merged if defining the same mass and name
