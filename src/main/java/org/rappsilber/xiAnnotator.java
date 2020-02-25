@@ -391,7 +391,7 @@ public class xiAnnotator {
                        
                         if (nl == null) {
                             evaluateConfigLine("loss:AminoAcidRestrictedLoss:NAME:CH3SOH;aminoacids:Mox;MASS:63.99828547");
-                            evaluateConfigLine("loss:AminoAcidRestrictedLoss:NAME:H20;aminoacids:S,T,D,E;MASS:18.01056027;cterm");
+                            evaluateConfigLine("loss:AminoAcidRestrictedLoss:NAME:H2O;aminoacids:S,T,D,E;MASS:18.01056027;cterm");
                             evaluateConfigLine("loss:AminoAcidRestrictedLoss:NAME:NH3;aminoacids:R,K,N,Q;MASS:17.02654493;nterm");
                         }
                        
@@ -452,6 +452,9 @@ public class xiAnnotator {
                     String aaID=jsonAA.get("aminoAcid").toString();
                     String modID = jsonAA.get("Modification").toString();
                     String  id = aaID+modID;
+                    if (modID.matches("[A-Z].*")) {
+                        id = modID;
+                    }
                     if (aaID.contentEquals("X") &&
                             modID.matches("[+\\-]?[0-9\\.,]*")) {
                         String sModMass =  modID;
@@ -1260,6 +1263,13 @@ public class xiAnnotator {
         if (aa instanceof AminoModification) {
             
             AminoAcid base = ((AminoModification)aa).BaseAminoAcid;
+            // make sure we have the most basic form
+            while (base instanceof AminoModification) {
+                base = ((AminoModification)aa).BaseAminoAcid;
+            }
+            if (base instanceof AminoLabel)
+                base = ((AminoLabel)base).BaseAminoAcid;
+            
             sb.append("{\"aminoAcid\":\"");
             sb.append(base.SequenceID);
             sb.append("\", \"Modification\":\"");

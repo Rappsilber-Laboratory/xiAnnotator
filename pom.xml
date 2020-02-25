@@ -6,7 +6,7 @@
     <groupId>org.rappsilberlab</groupId>
     <artifactId>xiAnnotator</artifactId>
     <packaging>jar</packaging>
-    <version>1.4.23</version>
+    <version>1.4.24</version>
     <name>xiAnnotator</name>
     <repositories>
       <repository>
@@ -58,8 +58,8 @@
         </dependency>
         <dependency>
             <groupId>rappsilber</groupId>
-            <artifactId>XiSearch</artifactId>
-            <version>1.6.753</version>
+            <artifactId>xiSEARCH</artifactId>
+            <version>1.7.2</version>
         </dependency>
     </dependencies>
 
@@ -135,7 +135,9 @@
         <jersey.version>2.22.1</jersey.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
-    <description>1.4.23 updated to xisearch 1.6.753
+    <description>1.4.24 updated to xisearch 1.7.2
+          fix for modifications on modifications
+1.4.23 updated to xisearch 1.6.753
 1.4.21 updated to xisearch 1.6.752 
 1.4.20 updated to xisearch 1.6.750 
 1.4.19 BugFix for Xi OpenModification search results
