@@ -446,31 +446,50 @@ public class xiAnnotator {
                 // get the residues
                 ArrayList<LinkedTreeMap> seq = (ArrayList<LinkedTreeMap>) jsonpeps.get(p).get("sequence");
                 AminoAcid[] pepArray  = new  AminoAcid[seq.size()];
-                for (int aa = 0; aa<pepArray.length;aa ++) {
-                    LinkedTreeMap jsonAA = seq.get(aa);
+                try {
+                    for (int aa = 0; aa<pepArray.length;aa ++) {
+                        LinkedTreeMap jsonAA = seq.get(aa);
+
+                        String aaID=jsonAA.get("aminoAcid").toString();
+                        String modID = jsonAA.get("Modification").toString();
+                        String  id = aaID+modID;
+                        if (modID.matches("[A-Z].*")) {
+                            id = modID;
+                        }
+                        if (aaID.contentEquals("X") &&
+                                modID.matches("[+\\-]?[0-9\\.,]*")) {
+                            String sModMass =  modID;
+                            if (sModMass.matches(".*\\,.*\\..*")) {
+                                sModMass = sModMass.replaceAll(",", "");
+                            }
+                            if (sModMass.matches(".*\\..*\\,.*")) {
+                                sModMass = sModMass.replaceAll(".", "");
+                                sModMass = sModMass.replaceAll(",", ".");
+                            }
+                            Double mass= Double.parseDouble(sModMass);
+                            config.addKnownModification(new AminoModification(id, AminoAcid.X, mass));
+                        }
+                        pepArray[aa]=config.getAminoAcid(id);
+                    }
+                    peps[p] = new Peptide(new Sequence(pepArray), 0, pepArray.length);
+                } catch (Exception e) {
+                    StringBuilder sbPep = new StringBuilder();
                     
-                    String aaID=jsonAA.get("aminoAcid").toString();
-                    String modID = jsonAA.get("Modification").toString();
-                    String  id = aaID+modID;
-                    if (modID.matches("[A-Z].*")) {
-                        id = modID;
-                    }
-                    if (aaID.contentEquals("X") &&
-                            modID.matches("[+\\-]?[0-9\\.,]*")) {
-                        String sModMass =  modID;
-                        if (sModMass.matches(".*\\,.*\\..*")) {
-                            sModMass = sModMass.replaceAll(",", "");
+                    for (int aa = 0; aa<pepArray.length;aa ++) {
+                        LinkedTreeMap jsonAA = seq.get(aa);
+
+                        String aaID=jsonAA.get("aminoAcid").toString();
+                        String modID = jsonAA.get("Modification").toString();
+                        String  id = aaID+modID;
+                        if (modID.matches("[A-Z].*")) {
+                            id = modID;
                         }
-                        if (sModMass.matches(".*\\..*\\,.*")) {
-                            sModMass = sModMass.replaceAll(".", "");
-                            sModMass = sModMass.replaceAll(",", ".");
-                        }
-                        Double mass= Double.parseDouble(sModMass);
-                        config.addKnownModification(new AminoModification(id, AminoAcid.X, mass));
+                        sbPep.append(id);
                     }
-                    pepArray[aa]=config.getAminoAcid(id);
+                    Sequence pepProt = new Sequence(sbPep.toString(),config);
+                    peps[p] = new Peptide(pepProt, 0, pepProt.length());
                 }
-                peps[p] = new Peptide(new Sequence(pepArray), 0, pepArray.length);
+                
             }
             ArrayList<Integer> links =new ArrayList<>();
             if (peps.length > 1) {
