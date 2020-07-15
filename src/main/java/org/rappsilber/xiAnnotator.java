@@ -326,6 +326,7 @@ public class xiAnnotator {
                         this.addCrossLinker(new SymetricSingleAminoAcidRestrictedCrossLinker("XL", xlMas, xlMas, new AminoAcid[]{}));
                         
                         if (losses != null) {
+                            nl = true;
                             for (LinkedTreeMap loss : losses) {
                                 boolean nterm = false;
                                 boolean cterm = false;
@@ -351,7 +352,6 @@ public class xiAnnotator {
                                         (cterm?";cterm":"") +
                                         (nterm?";nterm":"")
                                 );
-                                nl = true;
                             }
                         }
                          
@@ -504,7 +504,7 @@ public class xiAnnotator {
             sb = getJSON(spectrum, config, peps, links, 0, null, null,custom,sRequestID);
         } catch (Exception e) {
             Logger.getLogger(this.getClass().getName()).log(Level.WARNING,"Exception from request",e);
-            return getResponse(exception2String(e),MediaType.TEXT_PLAIN_TYPE);
+            return getResponse("{" + exception2JSON(e) +"}",MediaType.APPLICATION_JSON_TYPE);
         }
         Response r = getResponse(sb.toString(), MediaType.APPLICATION_JSON_TYPE);
 //        r.getHeaders().add("Access-Control-Allow-Header", "Content-Type, Accept, X-Requested-With, remember-me");
@@ -599,7 +599,7 @@ public class xiAnnotator {
 //            }
 //            sb.append("]}");
         } catch (Exception e) {
-            return getResponse(exception2String(e),MediaType.TEXT_PLAIN_TYPE);
+            return getResponse("{" + exception2JSON(e) +"}",MediaType.APPLICATION_JSON_TYPE);
         }
         Response r = getResponse(sb.toString(), MediaType.APPLICATION_JSON_TYPE);
         return r; 
@@ -773,7 +773,7 @@ public class xiAnnotator {
             System.err.println("error" + e);
             Logger.getLogger(this.getClass().getName()).log(Level.WARNING, "REQUEST /{0}/{1}/{2} - error", new Object[]{searchID, searchRID, matchID});
             Logger.getLogger(this.getClass().getName()).log(Level.WARNING, "eroror is :\n", e);
-            return getResponse("{\"error\":\""+exception2String(e)+"\"}", MediaType.APPLICATION_JSON_TYPE);
+            return getResponse("{" + exception2JSON(e) +"}",MediaType.APPLICATION_JSON_TYPE);
 //            return exception2String(e);
 //            StringBuilder sbError = new StringBuilder();
 //            for (StackTraceElement ste :e.getStackTrace()) {
@@ -1375,7 +1375,31 @@ public class xiAnnotator {
                     return sbError.toString();       
     }
     
-    
+
+    /**
+     * Just turns an exception into a string - as the name says.
+     * 
+     * @param e
+     * @return string representation of the exception
+     */
+    public String exception2JSON(Exception e){
+                    StringBuilder sbError = new StringBuilder("\"error\": {");
+                    
+                    sbError.append("\"description\": \"").append(e.toString()).append("\",");
+                    sbError.append("\"stacktrace\": [\"");
+                    boolean first = true;
+                    for (StackTraceElement ste :e.getStackTrace()) {
+                        if (!first) {
+                            sbError.append(",");
+                        } else {
+                            first = false;
+                        }
+                        sbError.append("\"").append(ste.toString()).append("\"");
+                    }
+                    sbError.append("]}");
+                    return sbError.toString();       
+    }
+
     
     String double2JSON(Double d) {
         if (d == null) {
