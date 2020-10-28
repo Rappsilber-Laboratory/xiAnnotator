@@ -492,7 +492,7 @@ public class xiAnnotator {
                 
             }
             ArrayList<Integer> links =new ArrayList<>();
-            if (peps.length > 1) {
+            if (peps.length > 1 && result.get("LinkSite") != null) {
                 for (int i=0;i<peps.length;i++) {
                     links.add(0);
                 }
@@ -808,7 +808,7 @@ public class xiAnnotator {
         Logger.getLogger(this.getClass().getName()).log(Level.FINE, "get match");
         match = getMatch(spectrum, peps, links, config,firstResidue);
         Logger.getLogger(this.getClass().getName()).log(Level.FINE, "add peptide to json");
-        addPeptides(sb, peps);
+        addPeptides(sb, match.getPeptides());
         Logger.getLogger(this.getClass().getName()).log(Level.FINE, "add links to json");
         addLinks(sb, peps, match);
         sb.append("\n\"peaks\" :[\n\t");
@@ -1068,7 +1068,11 @@ public class xiAnnotator {
             for (SpectraPeakMatchedFragment spmf : framentMatches.get(f)) {
                 if (spmf.getCharge() == c.charge) {
                     matchedMissing = spmf.matchedMissing();
-                    calcMZ = spmf.getMZ();
+                    if (matchedMissing) {
+                        calcMZ=spmf.getMZ()+Util.C13_MASS_DIFFERENCE/c.charge;
+                    } else {                    
+                        calcMZ = spmf.getMZ();
+                    }
                     break;
                 }
             }
