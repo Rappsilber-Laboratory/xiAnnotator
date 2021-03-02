@@ -326,6 +326,7 @@ public class xiAnnotator {
                         this.addCrossLinker(new SymetricSingleAminoAcidRestrictedCrossLinker("XL", xlMas, xlMas, new AminoAcid[]{}));
                         
                         if (losses != null) {
+                            nl = true;
                             for (LinkedTreeMap loss : losses) {
                                 boolean nterm = false;
                                 boolean cterm = false;
@@ -351,7 +352,6 @@ public class xiAnnotator {
                                         (cterm?";cterm":"") +
                                         (nterm?";nterm":"")
                                 );
-                                nl = true;
                             }
                         }
                          
@@ -492,7 +492,7 @@ public class xiAnnotator {
                 
             }
             ArrayList<Integer> links =new ArrayList<>();
-            if (peps.length > 1) {
+            if (peps.length > 1 && result.get("LinkSite") != null) {
                 for (int i=0;i<peps.length;i++) {
                     links.add(0);
                 }
@@ -504,7 +504,7 @@ public class xiAnnotator {
             sb = getJSON(spectrum, config, peps, links, 0, null, null,custom,sRequestID);
         } catch (Exception e) {
             Logger.getLogger(this.getClass().getName()).log(Level.WARNING,"Exception from request",e);
-            return getResponse(exception2String(e),MediaType.TEXT_PLAIN_TYPE);
+            return getResponse("{" + exception2JSON(e) +"}",MediaType.APPLICATION_JSON_TYPE);
         }
         Response r = getResponse(sb.toString(), MediaType.APPLICATION_JSON_TYPE);
 //        r.getHeaders().add("Access-Control-Allow-Header", "Content-Type, Accept, X-Requested-With, remember-me");
@@ -599,7 +599,7 @@ public class xiAnnotator {
 //            }
 //            sb.append("]}");
         } catch (Exception e) {
-            return getResponse(exception2String(e),MediaType.TEXT_PLAIN_TYPE);
+            return getResponse("{" + exception2JSON(e) +"}",MediaType.APPLICATION_JSON_TYPE);
         }
         Response r = getResponse(sb.toString(), MediaType.APPLICATION_JSON_TYPE);
         return r; 
@@ -773,7 +773,7 @@ public class xiAnnotator {
             System.err.println("error" + e);
             Logger.getLogger(this.getClass().getName()).log(Level.WARNING, "REQUEST /{0}/{1}/{2} - error", new Object[]{searchID, searchRID, matchID});
             Logger.getLogger(this.getClass().getName()).log(Level.WARNING, "eroror is :\n", e);
-            return getResponse("{\"error\":\""+exception2String(e)+"\"}", MediaType.APPLICATION_JSON_TYPE);
+            return getResponse("{" + exception2JSON(e) +"}",MediaType.APPLICATION_JSON_TYPE);
 //            return exception2String(e);
 //            StringBuilder sbError = new StringBuilder();
 //            for (StackTraceElement ste :e.getStackTrace()) {
@@ -808,7 +808,7 @@ public class xiAnnotator {
         Logger.getLogger(this.getClass().getName()).log(Level.FINE, "get match");
         match = getMatch(spectrum, peps, links, config,firstResidue);
         Logger.getLogger(this.getClass().getName()).log(Level.FINE, "add peptide to json");
-        addPeptides(sb, peps);
+        addPeptides(sb, match.getPeptides());
         Logger.getLogger(this.getClass().getName()).log(Level.FINE, "add links to json");
         addLinks(sb, peps, match);
         sb.append("\n\"peaks\" :[\n\t");
@@ -1062,7 +1062,6 @@ public class xiAnnotator {
             Cluster c = clusters.get(cid);
             
             boolean matchedMissing = false;
-            double error =0;
             double expMz = c.mz;
             double calcMZ = 0;
             // find a match that fits to the cluster
@@ -1071,7 +1070,7 @@ public class xiAnnotator {
                     matchedMissing = spmf.matchedMissing();
                     if (matchedMissing) {
                         calcMZ=spmf.getMZ()+Util.C13_MASS_DIFFERENCE/c.charge;
-                    } else {
+                    } else {                    
                         calcMZ = spmf.getMZ();
                     }
                     break;
@@ -1080,6 +1079,7 @@ public class xiAnnotator {
  //           String errorS = conf.getFragmentTolerance().toString(calcMZ, expMz);
             clusterInfos.append(indent).append("{\"Clusterid\":").append(cid)
                     .append(",\"calcMZ\":").append(calcMZ)
+                    .append(",\"matchedCharge\":").append(c.charge)
                     .append(",\"error\":").append(tu.getError(calcMZ, expMz))
                     .append(",\"errorUnit\":\"").append(tuUnit);
             if (matchedMissing)
@@ -1115,7 +1115,7 @@ public class xiAnnotator {
                     // seems like we have a single peak anotation
                     for (SpectraPeakMatchedFragment spf : sp.getMatchedAnnotation()) {
                         // so we create a cluster for this peak
-                        sbCluster.append("\n\t{\"charge\":"+ spf.getCharge() +",\"firstPeakId\":"+ peakID +"},");
+                        sbCluster.append("\n\t{\"charge\":0,\"firstPeakId\":"+ peakID +"},");
                         cids.add(++cID);
                         fragmentCluster.add(spf.getFragment(),cID);
                         framentMatches.add(spf.getFragment(), spf);
@@ -1222,17 +1222,29 @@ public class xiAnnotator {
             sb.append(",\n\t\t\t");
             appendAA(peps[0].aminoAcidAt(a), sb);
         }
+        sb.append("\n\t\t],");
+        sb.append("\n\t\t\"nTerminal\": ");
+        sb.append(peps[0].isNTerminal() ? "true," : "false,");
+        sb.append("\n\t\t\"cTerminal\": ");
+        sb.append(peps[0].isCTerminal() ? "true" : "false");
+        sb.append("\n\t}");
         if (peps.length>1) {
-            sb.append("\n\t\t]\n\t},\n\t{\n\t\t\"sequence\":[\n\t\t\t");
+            sb.append(",\n\t{\n\t\t\"sequence\":[\n\t\t\t");
             aa = peps[1].aminoAcidAt(0);
             appendAA(aa, sb);
             for (int a =1; a<peps[1].length();a++) {
                 sb.append(",\n\t\t\t");
                 appendAA(peps[1].aminoAcidAt(a), sb);
             }
+            sb.append("\n\t\t],");
+            sb.append("\n\t\t\"nTerminal\": ");
+            sb.append(peps[1].isNTerminal() ? "true," : "false,");
+            sb.append("\n\t\t\"cTerminal\": ");
+            sb.append(peps[1].isCTerminal() ? "true" : "false");
+            sb.append("\n\t}");
         }
         //link sites
-        sb.append("\n\t\t]\n\t}\n],\n");
+        sb.append("\n],\n");
     }
     
     /**
@@ -1284,7 +1296,7 @@ public class xiAnnotator {
             AminoAcid base = ((AminoModification)aa).BaseAminoAcid;
             // make sure we have the most basic form
             while (base instanceof AminoModification) {
-                base = ((AminoModification)aa).BaseAminoAcid;
+                base = ((AminoModification)base).BaseAminoAcid;
             }
             if (base instanceof AminoLabel)
                 base = ((AminoLabel)base).BaseAminoAcid;
@@ -1375,7 +1387,31 @@ public class xiAnnotator {
                     return sbError.toString();       
     }
     
-    
+
+    /**
+     * Just turns an exception into a string - as the name says.
+     * 
+     * @param e
+     * @return string representation of the exception
+     */
+    public String exception2JSON(Exception e){
+                    StringBuilder sbError = new StringBuilder("\"error\": {");
+                    
+                    sbError.append("\"description\": \"").append(e.toString()).append("\",");
+                    sbError.append("\"stacktrace\": [\"");
+                    boolean first = true;
+                    for (StackTraceElement ste :e.getStackTrace()) {
+                        if (!first) {
+                            sbError.append(",");
+                        } else {
+                            first = false;
+                        }
+                        sbError.append("\"").append(ste.toString()).append("\"");
+                    }
+                    sbError.append("]}");
+                    return sbError.toString();       
+    }
+
     
     String double2JSON(Double d) {
         if (d == null) {
