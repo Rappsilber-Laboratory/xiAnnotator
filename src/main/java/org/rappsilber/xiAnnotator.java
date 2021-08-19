@@ -515,12 +515,12 @@ public class xiAnnotator {
     @GET
     @Path("/knownModifications")
     @Produces(MediaType.APPLICATION_JSON ) 
-    public Response getKnownModifications() throws ParseException {
+    public Response getKnownModifications(final @QueryParam("searchid") List<Integer> searchids) throws ParseException {
         //setup the config
         Logger.getLogger(this.getClass().getName()).log(Level.FINE, "REQUEST /knownModifications");
         StringBuilder sb = new StringBuilder();
         try {
-            Connection con = getConnection();
+            final Connection con = getConnection();
             
             final ResultSet rs = con.createStatement().executeQuery("select 'modification:variable:'|| description from modification");
             final ResultSet rsXL = con.createStatement().executeQuery("select description from crosslinker");
@@ -534,6 +534,15 @@ public class xiAnnotator {
                         while (rsXL.next()) {
                             evaluateConfigLine(rsXL.getString(1));
                         }
+                        if (searchids.size()>0) {
+                            ResultSet rsCus = con.createStatement().executeQuery("select  customsettings from search s inner join parameter_set ps on s.paramset_id = ps.id where s.id in (" + 
+                                    MyArrayUtils.toString(searchids, ",") + ");");
+                            while (rsCus.next()) {
+                                evaluateConfigLine("custom:" + rsCus.getString(1));
+                            }
+                            
+                        }
+                        
 
                         
                     }
