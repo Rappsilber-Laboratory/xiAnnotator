@@ -46,6 +46,7 @@ public class xiAnnotatorKnownModifications {
     public void testGetIt() {
 
         String responseMsg = target.path("annotate/knownModifications")
+                .queryParam("searchid","17000")
                 .request().get(String.class);
         
         System.out.println(responseMsg);
