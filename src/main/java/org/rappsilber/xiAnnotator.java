@@ -374,6 +374,15 @@ public class xiAnnotator {
                                     } else if (opt.startsWith("loss:AminoAcidRestrictedLoss:")) {
                                         custom.remove(opt);
                                     }
+                                }else { // parse additional crosslinker defintions
+                                    String[] defs = opt.trim().split(";");
+                                    for (String def : defs) {
+                                        // temprarily add the crosslinker definitions
+                                        // this means we also enable any modifications and stubs that are configured this way
+                                        this.evaluateConfigLine(opt);
+                                        this.getCrossLinker().remove(this.getCrossLinker().size()-1);
+                                    }
+                                    
                                 }
                             }
                         } else if (customConfig instanceof String) {

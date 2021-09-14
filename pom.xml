@@ -6,7 +6,7 @@
     <groupId>org.rappsilberlab</groupId>
     <artifactId>xiAnnotator</artifactId>
     <packaging>jar</packaging>
-    <version>1.4.29</version>
+    <version>1.4.30</version>
     <name>xiAnnotator</name>
     <repositories>
       <repository>
@@ -135,7 +135,8 @@
         <jersey.version>2.22.1</jersey.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
-    <description>1.4.29 use xiSEARCH 1.7.6.4 for annotations
+    <description>1.4.30 if custom setiings also defines crosslinker also parse these in
+1.4.29 use xiSEARCH 1.7.6.4 for annotations
 1.4.28 fixed (reverted a change in 1.4.27) that missing monoisotopic peaks where reported with large error
           use xiSEARCH 1.7.6.2.RC1 for annotations
 1.4.27
