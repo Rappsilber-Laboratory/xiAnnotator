@@ -6,7 +6,7 @@
     <groupId>org.rappsilberlab</groupId>
     <artifactId>xiAnnotator</artifactId>
     <packaging>jar</packaging>
-    <version>1.4.30</version>
+    <version>1.4.32</version>
     <name>xiAnnotator</name>
     <repositories>
       <repository>
@@ -49,17 +49,18 @@
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
-            <version>9.4.1208.jre7</version>
-        </dependency>
-        <dependency>
-            <groupId>com.google.code.gson</groupId>
-            <artifactId>gson</artifactId>
-            <version>2.7</version>
+            <version>42.4.0</version>
         </dependency>
         <dependency>
             <groupId>rappsilber</groupId>
             <artifactId>xiSEARCH</artifactId>
-            <version>1.7.6.4</version>
+            <version>1.7.6.9.beta</version>
+
+        </dependency>
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>2.8.5</version>
         </dependency>
     </dependencies>
 
@@ -135,7 +136,9 @@
         <jersey.version>2.22.1</jersey.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
-    <description>1.4.30 if custom setiings also defines crosslinker also parse these in
+    <description>1.4.32 Reporting back all possible modification specificities that where in the request for a modification
+1.4.31 Stream annotations with database ids, empty arrays for modifications if non are defined
+1.4.30 if custom setiings also defines crosslinker also parse these in
 1.4.29 use xiSEARCH 1.7.6.4 for annotations
 1.4.28 fixed (reverted a change in 1.4.27) that missing monoisotopic peaks where reported with large error
           use xiSEARCH 1.7.6.2.RC1 for annotations
