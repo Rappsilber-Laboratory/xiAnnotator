@@ -1051,7 +1051,7 @@ public class xiAnnotator {
         }
         
         
-        return "{\"aminoacids\":[ \"" + MyArrayUtils.toString(aas, "\",\"") + "\"], \"id\":\""+modID + "\", \"mass\":" + double2JSON(mass)+ "},";
+        return "{\"aminoAcids\":[ \"" + MyArrayUtils.toString(aas, "\",\"") + "\"], \"id\":\""+modID + "\", \"mass\":" + double2JSON(mass)+ "},";
     }
 
     public String labelToString(AminoLabel mod) {
