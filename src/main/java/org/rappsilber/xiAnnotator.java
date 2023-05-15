@@ -937,20 +937,24 @@ public class xiAnnotator {
                 if (aa instanceof AminoModification) {
                     AminoModification am = (AminoModification) aa;
                     if (!mods.contains(am)) {
-                        sbMods.append("\n\t\t").append(modificationToString(am, config, mods));
-                        mods.add(am);
+                        String modString = modificationToString(am, config, mods);
+                        if (modString.length()>0) {
+                            sbMods.append("\n\t\t").append(modString);
+                            mods.add(am);
+                        }
                     }
                 } else if (aa instanceof AminoLabel) {
                     AminoLabel al = (AminoLabel) aa;
                     if (!mods.contains(al)) {
-                        sbMods.append("\n\t\t").append(labelToString(al));
-                        mods.add(al);
+                        String labelStr = labelToString(al);
+                        if (labelStr.length()>0)
+                            sbMods.append("\n\t\t").append(labelStr);
+                            mods.add(al);
                     }
                 }
             }
         }
-        if (!mods.isEmpty()) {
-            sbMods.deleteCharAt(sbMods.length()-1);
+        if (!mods.isEmpty() && mods.size() > 1) {
             sb.append(",\n\t\"modifications\":[").append(sbMods).append("\n\t]");
         } else {
             sb.append(",\n\t\"modifications\":[]");
