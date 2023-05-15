@@ -39,6 +39,7 @@ public class Main {
      * @throws IOException
      */
     public static void main(String[] args) throws IOException {
+        java.sql.Connection c = null;
         BASE_URI = System.getProperty("BASE_URI",BASE_URI);
         commandlineLoggerLevel();
         final HttpServer server = startServer();
