@@ -6,7 +6,7 @@
     <groupId>org.rappsilberlab</groupId>
     <artifactId>xiAnnotator</artifactId>
     <packaging>jar</packaging>
-    <version>1.4.33</version>
+    <version>1.4.34</version>
     <name>xiAnnotator</name>
     <repositories>
       <repository>
@@ -69,14 +69,16 @@
 		    <plugin>
 			    <groupId>org.apache.maven.plugins</groupId>
 			    <artifactId>maven-war-plugin</artifactId>
+                            <version>3.2.0</version>
 			    <configuration>
 				    <failOnMissingWebXml>false</failOnMissingWebXml>
 			   </configuration>
 		   </plugin>
-		   <plugin>
+		   <!--plugin>
 			   <groupId>org.mortbay.jetty</groupId>
+                           <version>
 			   <artifactId>jetty-maven-plugin</artifactId>
-		   </plugin>
+		   </plugin-->
                 <plugin>
                         <artifactId>maven-assembly-plugin</artifactId>
                         <configuration>
@@ -98,6 +100,7 @@
                 <configuration>
                     <source>1.7</source>
                     <target>1.7</target>
+                    <showDeprecation>true</showDeprecation>
                 </configuration>
             </plugin>
             <plugin>
@@ -115,13 +118,15 @@
                     <mainClass>org.rappsilber.Main</mainClass>
                 </configuration>
             </plugin>
-            <plugin>
+            <!--plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
+                <version>2.22.3</version>
                 <configuration>
                     <useSystemClassLoader>false</useSystemClassLoader>
+                    <trimStackTrace>false</trimStackTrace>
                 </configuration>
-            </plugin>
+            </plugin-->
         </plugins>
         
       <resources>
@@ -136,7 +141,8 @@
         <jersey.version>2.22.1</jersey.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
-    <description>1.4.33 Fix for duplicate modifications with very slightly different masses
+    <description>1.4.34 Again fix for duplicate modifications with very slightly different masses
+1.4.33 Fix for duplicate modifications with very slightly different masses
 1.4.32 Reporting back all possible modification specificities that where in the request for a modification
 1.4.31 Stream annotations with database ids, empty arrays for modifications if non are defined
 1.4.30 if custom setiings also defines crosslinker also parse these in
