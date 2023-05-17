@@ -931,7 +931,7 @@ public class xiAnnotator {
         }
         boolean hasmod = false;
         HashSet<AminoAcid> mods =new HashSet<>();
-        StringBuilder sbMods= new StringBuilder();
+        ArrayList<String> sbMods= new ArrayList<>();
         for (Peptide p : peps) {
             for (AminoAcid aa : p) {
                 if (aa instanceof AminoModification) {
@@ -939,7 +939,7 @@ public class xiAnnotator {
                     if (!mods.contains(am)) {
                         String modString = modificationToString(am, config, mods);
                         if (modString.length()>0) {
-                            sbMods.append("\n\t\t").append(modString);
+                            sbMods.add(modString);
                             mods.add(am);
                         }
                     }
@@ -948,14 +948,14 @@ public class xiAnnotator {
                     if (!mods.contains(al)) {
                         String labelStr = labelToString(al);
                         if (labelStr.length()>0)
-                            sbMods.append("\n\t\t").append(labelStr);
+                            sbMods.add(labelStr);
                             mods.add(al);
                     }
                 }
             }
         }
         if (!mods.isEmpty() && mods.size() > 1) {
-            sb.append(",\n\t\"modifications\":[").append(sbMods).append("\n\t]");
+            sb.append(",\n\t\"modifications\":[").append(MyArrayUtils.toString(sbMods, ",\n\t\t")).append("\n\t]");
         } else {
             sb.append(",\n\t\"modifications\":[]");
         }
@@ -1055,7 +1055,7 @@ public class xiAnnotator {
         }
         
         
-        return "{\"aminoAcids\":[ \"" + MyArrayUtils.toString(aas, "\",\"") + "\"], \"id\":\""+modID + "\", \"mass\":" + double2JSON(mass)+ "},";
+        return "{\"aminoAcids\":[ \"" + MyArrayUtils.toString(aas, "\",\"") + "\"], \"id\":\""+modID + "\", \"mass\":" + double2JSON(mass)+ "}";
     }
 
     public String labelToString(AminoLabel mod) {
