@@ -954,7 +954,7 @@ public class xiAnnotator {
                 }
             }
         }
-        if (!mods.isEmpty() && mods.size() > 1) {
+        if (!mods.isEmpty() && mods.size() > 0) {
             sb.append(",\n\t\"modifications\":[").append(MyArrayUtils.toString(sbMods, ",\n\t\t")).append("\n\t]");
         } else {
             sb.append(",\n\t\"modifications\":[]");
